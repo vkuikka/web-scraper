@@ -3,9 +3,10 @@
 class	data_block:
 	seller_name = ""
 	address = ""
-	year = ""
-	area = "" # m^2
-	price = 0
+	publish_time = 0	# unix epoch
+	price = 0	# euro
+	area = 0	# m^2
+	year = 0
 	lon = 0
 	lat = 0
 
@@ -26,15 +27,17 @@ class	data_block:
 		except:
 			self.seller_name = "private"
 		try:
-			self.year = line.split('constructionFinishedYear":')[1].split(',')[0]
+			self.year = int(float(line.split('constructionFinishedYear":')[1].split(',')[0]))
 		except:
 			self.year = None
 		try:
-			self.area = line.split('area":')[1].split(',')[0]
+			self.area = float(line.split('area":')[1].split(',')[0])
 		except:
 			self.area = None
-		self.lon = 0.0
-		self.lat = 0.0
+		try:
+			self.publish_time = int(float(line.split('publishingTime":')[1].split(',')[0]))
+		except:
+			self.publish_time = None
 
 	def	set_coordinates(self, location):
 		self.lat = location.latitude

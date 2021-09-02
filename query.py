@@ -7,24 +7,26 @@ import numpy as np
 import pickle
 import time
 
-def parse(line, geolocator, saved_data, since_last):
+def parse(line, geolocator, saved_data, last_time):
 
 	block = data_block(line)
 
 	if block.address not in saved_data:
-		while time.time() - since_last < 1.25:
+		while time.time() - last_time < 1.25:
 			time.sleep(0.01)
-		address = block.address.split(" ")
-		address = address[:-2] + address[-1:]
-		address = " ".join(address)
-		location = geolocator.geocode(address)
+		geo_address = block.address.split(" ")
+		geo_address = geo_address[:-2] + geo_address[-1:]
+		geo_address = " ".join(geo_address)
+		location = geolocator.geocode(geo_address)
 		if location != None:
 			block.set_coordinates(location)
 		saved_data[block.address] = block
 		print(bcol.OKBLUE + 'adding: ' + bcol.ENDC + block.address + " " + str(block.lon) + ", " + str(block.lat))
+		return float(time.time())
 	else:
+		saved_data[block.address] = block
 		print(bcol.OKGREEN + 'skipping: ' + bcol.ENDC + block.address)
-	return float(time.time())
+	return last_time
 
 def main():
 	curlheader = {
