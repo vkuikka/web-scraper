@@ -1,8 +1,12 @@
 #!/usr/bin/python3
 import pickle
+import sys
 
 def main():
-	file = open("cache", "rb")
+	if len(sys.argv) != 2:
+		print("give cache file as argument")
+		return
+	file = open(sys.argv[1], "rb")
 	data = file.read()
 	x = pickle.loads(data)
 	try:
