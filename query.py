@@ -5,6 +5,7 @@ import requests
 from geopy.geocoders import Nominatim
 import pickle
 import time
+from threading import Thread
 
 def parse(line, geolocator, saved_data, last_time):
 
@@ -36,29 +37,43 @@ def parse(line, geolocator, saved_data, last_time):
 		print(bcol.OKGREEN + 'skipping: ' + bcol.ENDC + block.address)
 	return last_time
 
+def	save_cache(saved_data, path):
+	f = open(path, "wb")
+	serial_data = pickle.dumps(saved_data)
+	f.write(serial_data)
+	f.close()
+
+
+def	page_amount(url, curlheader):
+	req = requests.get(url + '1', curlheader)
+	splitted = req.text.split('button\">')
+	first = []
+	for line in splitted:
+		add = line.split('<')[0]
+		if add != '':
+			first.append(add)
+	return int(first[-1:][0])
+
 def main():
-	url = 'https://www.etuovi.com/myytavat-asunnot?haku=M1718964015&sivu=0'
+	url = 'https://www.etuovi.com/myytavat-asunnot?haku=M1718964015&sivu='
 	curlheader = open("header.txt", "r").read()
 	file = open("cache", "rb")
 	saved_data = pickle.loads(file.read())
 	file.close()
-	geolocator = Nominatim(user_agent="whatdoiputhere")
+	geolocator = Nominatim(user_agent="etuovi_mapmaker")
 	startpage = 1
-	pages = 2000
-
+	pages = page_amount(url, curlheader) + 1
 	for i in range(startpage, pages):
-		req = requests.get(url + str(i), curlheader)
-		splitted = req.text.split("location\":\"")
+		reponse = requests.get(url + str(i), curlheader)
+		splitted = reponse.text.split("location\":\"")
 		del splitted[0]
 		time_last = 0
 		for line in splitted:
 			time_last = float(parse(line, geolocator, saved_data, time_last))
-
 		print(bcol.WARNING + 'saving cache ' + str(i) + " / " + str(pages))
-		file = open("cache", "wb")
-		serial_data = pickle.dumps(saved_data)
-		file.write(serial_data)
-		file.close()
+		t = Thread(target=save_cache, args=(saved_data, "cache"))
+		t.start()
+		t.join()
 
 if __name__ == '__main__':
 	try:
