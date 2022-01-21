@@ -11,16 +11,18 @@ def rgb(minimum, maximum, value):
 	b = int(max(0, 255*(1 - ratio)))
 	r = int(max(0, 255*(ratio - 1)))
 	g = 255 - b - r
-	return r, g, b
+	if b == 255:
+		b = 0
+	return int(r), int(g), int(b)
 
 def main():
 	file = open("cache", "rb")
 	data = file.read()
 	data = pickle.loads(data)
 
-	image_size = 5000
+	image_size = 2000
 	arr = np.zeros(shape=(image_size, image_size), dtype=int)
-	lat_floor = 57
+	lat_floor = 53
 	lon_floor = 15
 	# lat_floor = -10
 	# lon_floor = -30
@@ -37,14 +39,10 @@ def main():
 			continue
 		lon = d.lon - lon_floor
 		lat = d.lat - lat_floor
-		if lon < lon_min:
-			lon_min = lon
-		if lon > lon_max:
-			lon_max = lon
-		if lat < lat_min:
-			lat_min = lat
-		if lat > lat_max:
-			lat_max = lat
+		lon_min = min(lon_min, lon)
+		lon_max = max(lon_max, lon)
+		lat_min = min(lat_min, lon)
+		lat_max = max(lat_max, lon)
 	print('longtitude: ' + str(lon_min) + ' - ' + str(lon_max))
 	print('lattitude:  ' + str(lat_min) + ' - ' + str(lat_max))
 	print('')
@@ -70,19 +68,28 @@ def main():
 		lon *= image_size
 		lat *= image_size
 
-		# if lon < image_size and lat < image_size and lon > 0 and lat > 0 and d.area != None and float(d.area) > 10 and d.price != None and d.price > 0:
-		# 	if d.price < 50000:
-		# 		under_limit += 1
-		# 	else:
-		# 		arr[int(lat)][int(lon)] = int(float(d.price) / float(d.area))
-		# 		used += 1
-
-		if lon < image_size and lat < image_size and lon > 0 and lat > 0 and d.year != None and int(float(d.year)) > 0:
-			if int(float(d.year)) < 1700:
+		# Pixel brightness corresponds to the price per square meter
+		if lon < image_size and lat < image_size and lon > 0 and lat > 0 and d.area != None and float(d.area) > 10 and d.price != None and d.price > 0:
+			if d.price < 50000:
 				under_limit += 1
 			else:
-				arr[int(lat)][int(lon)] = int(float(d.year))
-				used += 1
+				new = int(float(d.price) / float(d.area))
+				if new > arr[int(lat)][int(lon)]:
+					arr[int(lat)][int(lon)] = new
+					used += 1
+				else:
+					skipped += 1
+
+		# # Brightness corresponds to the age of the house. Prefer older and cap at 1950
+		# if lon < image_size and lat < image_size and lon > 0 and lat > 0 and d.year != None and int(float(d.year)) > 0:
+		# 	if (int(float(d.year)) > arr[int(lat)][int(lon)] and arr[int(lat)][int(lon)] != 0):
+		# 		under_limit += 1
+		# 	else:
+		# 		if int(float(d.year)) < 1950:
+		# 			arr[int(lat)][int(lon)] = 1950
+		# 		else:
+		# 			arr[int(lat)][int(lon)] = int(float(d.year))
+		# 		used += 1
 
 		# if lon < image_size and lat < image_size and lon > 0 and lat > 0 and d.area != None and float(d.area) > 10 and d.price != None and d.price > 0:
 		# 	if lon < image_size and lat < image_size and lon > 0 and lat > 0 and d.year != None and int(float(d.year)) > 0:
@@ -93,8 +100,6 @@ def main():
 		# 			used += 1
 		# 	else:
 		# 		skipped += 1
-			# print(str(d.lon) + ", " + str(d.lat) + " p: " + str(d.price))
-			# print("ARR TOO SMALL: " + d.address + " " + str(lon)  + ", " + str(lat))
 	print("under limit: " + str(under_limit))
 	print("skipped: " + str(skipped))
 	print("used: " + str(used))
@@ -109,10 +114,6 @@ def main():
 	minval = np.amin(arr)
 	maxval = np.amax(arr)
 	print(str(minval) + " - " + str(maxval))
-	# for each in arr:
-	# 	for rach in each:
-	# 		if rach != 0:
-	# 			print(rach)
 		
 	scaler = MinMaxScaler()
 	arr = scaler.fit_transform(arr)
@@ -122,6 +123,7 @@ def main():
 	print(str(minval) + " - " + str(maxval))
 	arr *= 255
 
+	# # Colored image takes more time to generate
 	# pxl = []
 	# for i in range(image_size):
 	# 	pxl.append([])
@@ -130,17 +132,18 @@ def main():
 	# im2 = Image.new(mode="RGB", size=(image_size, image_size))
 	# im2.putdata([pxl[x][y] for x in range(image_size) for y in range(image_size)])
 	# im2.show()
+	# im2 = im2.filter(ImageFilter.GaussianBlur(0.9))
+	# enhancer = ImageEnhance.Brightness(im2)
+	# im2 = enhancer.enhance(2)
+	# im2.show()
 
 	im = Image.fromarray(np.uint8(arr), 'L')
 	im.show()
 	# im.save('price_no_blur.png')
-
 	im = im.filter(ImageFilter.GaussianBlur(0.9))
-
 	enhancer = ImageEnhance.Brightness(im)
 	im = enhancer.enhance(2)
 	im.show()
-
 	# im.save('img/img.png')
 
 if __name__ == "__main__":
