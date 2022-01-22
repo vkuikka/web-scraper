@@ -5,6 +5,7 @@ Scrapes and visualizes data from [Etuovi](https://www.etuovi.com/) using [Geopy]
 - ```cache_init.py``` creates a cache file that will be storing all your queried data.
 - ```query.py``` adds to the cache file with more data found from etuovi and queried from geopy.
 - ```image.py``` creates images from the data saved in cache file.
+- You need to make a file called header.txt and add the header needed for etuovi.com request.
 
 ## Optional:
 - ```cache_read.py``` reads and outputs all the data saved in cache file.
