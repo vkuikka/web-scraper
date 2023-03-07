@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/local/bin/python3
 from data_block import data_block
 from bcolor import bcol
 import requests
@@ -10,6 +10,10 @@ from threading import Thread
 def parse(line, geolocator, saved_data, last_time):
 
 	block = data_block(line)
+	if not any(char.isdigit() for char in block.address):
+		if (block.address != "Kartta"):
+			print(bcol.FAIL + 'no numbers skipping rest of the page: ' + bcol.ENDC + block.address)
+		return -1
 
 	if block.address not in saved_data:
 		while time.time() - last_time < 1.4:
@@ -64,12 +68,14 @@ def main():
 	startpage = 1
 	pages = page_amount(url, curlheader) + 1
 	for i in range(startpage, pages):
-		reponse = requests.get(url + str(i), curlheader)
-		splitted = reponse.text.split("location\":\"")
+		response = requests.get(url + str(i), curlheader)
+		splitted = response.text.split("location\":\"")
 		del splitted[0]
 		time_last = 0
 		for line in splitted:
 			time_last = float(parse(line, geolocator, saved_data, time_last))
+			if (time_last == -1):
+				break
 		print(bcol.WARNING + 'saving cache ' + str(i) + " / " + str(pages))
 		t = Thread(target=save_cache, args=(saved_data, "cache"))
 		t.start()
